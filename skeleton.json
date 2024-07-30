@@ -1,0 +1,83 @@
+{
+    "job_title": "Software Engineer at Microsoft",
+    "roadmap": [
+      {
+        "id": 1,
+        "title": "Learn Programming Languages",
+        "description": "Master essential programming languages used in software engineering.",
+        "skills_needed": ["Python", "C++", "Java", "JavaScript"],
+        "status": ""
+      },
+      {
+        "id": 2,
+        "title": "Understand Data Structures and Algorithms",
+        "description": "Gain a solid understanding of fundamental data structures and algorithms.",
+        "skills_needed": ["Data Structures", "Algorithms"],
+        "status": ""
+      },
+      {
+        "id": 3,
+        "title": "Solve 200 LeetCode Problems",
+        "description": "Complete at least 200 problems on LeetCode to practice problem-solving skills.",
+        "skills_needed": ["LeetCode"],
+        "status": ""
+      },
+      {
+        "id": 4,
+        "title": "Achieve Top 5% Rank on Codeforces",
+        "description": "Reach a rank in the top 5% of participants on Codeforces.",
+        "skills_needed": ["Codeforces"],
+        "status": ""
+      },
+      {
+        "id": 5,
+        "title": "Complete 50 Competitive Programming Contests",
+        "description": "Participate in and complete at least 50 competitive programming contests.",
+        "skills_needed": ["Competitive Programming"],
+        "status": ""
+      },
+      {
+        "id": 6,
+        "title": "Contribute to Open Source Projects",
+        "description": "Get involved in and contribute to open source projects to gain real-world experience.",
+        "skills_needed": ["Open Source Contribution"],
+        "status": ""
+      },
+      {
+        "id": 7,
+        "title": "Participate in Hackathons",
+        "description": "Take part in hackathons to enhance practical coding skills and teamwork.",
+        "skills_needed": ["Hackathon Experience"],
+        "status": ""
+      },
+      {
+        "id": 8,
+        "title": "Build Personal Projects",
+        "description": "Develop and complete personal projects to showcase your skills and creativity.",
+        "skills_needed": ["Personal Projects"],
+        "status": ""
+      },
+      {
+        "id": 9,
+        "title": "Learn System Design",
+        "description": "Understand system design principles and design scalable systems.",
+        "skills_needed": ["System Design"],
+        "status": ""
+      },
+      {
+        "id": 10,
+        "title": "Prepare for Technical Interviews",
+        "description": "Practice technical interview questions and mock interviews to prepare for the interview process.",
+        "skills_needed": ["Technical Interviews"],
+        "status": ""
+      },
+      {
+        "id": 11,
+        "title": "Apply for Internships or Entry-Level Positions",
+        "description": "Gain experience by applying for internships or entry-level software engineering positions.",
+        "skills_needed": ["Internship Experience"],
+        "status": ""
+      }
+    ]
+  }
+  
