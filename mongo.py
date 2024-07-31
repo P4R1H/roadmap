@@ -32,6 +32,7 @@ def create_account(username, password, skills=None):
             "username": username,
             "password": password_hash,
             "skills": skills if skills else [],
+            "roadmap": generate_roadmap()
         }
     )
 
@@ -50,15 +51,13 @@ def add_skills(username, new_skills):
         return -1
 
     updated_skills = list(set(user.get("skills", []) + new_skills))
-    result = users.update_one(
+    users.update_one(
         {"username": username},
         {"$set": {"skills": updated_skills}}
     )
 
-    if result.modified_count > 0:
-        print(f"Skills updated for {username}")
-    else:
-        print(f"Failed to update skills for {username}")
+    update_user_roadmap(username, updated_skills)
+    print(f"Skills updated for {username}")
 
 def get_skills(username: str):
     user = users.find_one({"username": username})
@@ -87,20 +86,47 @@ def skill_search(q: str):
     
     return json.loads(json_util.dumps(res))
 
-def roadmap_for_skills(username):
-    user_skills = get_skills(username)
-    recommended_skills = []  
-    # Placeholder
-    if "Python" not in user_skills:
-        recommended_skills.append("Python")
-    if "Machine Learning" not in user_skills:
-        recommended_skills.append("Machine Learning")
-    
-    return recommended_skills
+def generate_roadmap():
+    return [
+        {"step": "Learn a language", "skills": ["Programming Language"], "completed": False},
+        {"step": "Solve leetcode easy", "skills": ["Problem Solving"], "completed": False},
+        {"step": "Build an easy project", "skills": ["Project Development"], "completed": False},
+        {"step": "Learn about common datastructures", "skills": ["Data Structures"], "completed": False},
+        {"step": "Leetcode easys + mediums", "skills": ["Problem Solving"], "completed": False},
+        {"step": "Give your first codechef contest", "skills": ["Competitive Programming"], "completed": False},
+        {"step": "Choose a domain (webdev, AI/ML, app dev)", "skills": ["Domain Knowledge"], "completed": False},
+        {"step": "Create projects in your chosen domain", "skills": ["Project Development"], "completed": False},
+        {"step": "Learn common devops tools", "skills": ["DevOps"], "completed": False},
+        {"step": "Start applying for internships", "skills": ["Networking", "Interview Preparation"], "completed": False},
+        {"step": "Participate in hackathons", "skills": ["Hackathons"], "completed": False},
+        {"step": "Contribute to open source", "skills": ["Open Source"], "completed": False},
+        {"step": "Learn complex DSA concepts", "skills": ["Advanced DSA"], "completed": False},
+        {"step": "Attend Microsoft webinars", "skills": ["Networking"], "completed": False},
+        {"step": "Strengthen core OOPS concepts", "skills": ["OOPS"], "completed": False},
+        {"step": "Strengthen core DBMS", "skills": ["DBMS"], "completed": False},
+        {"step": "Strengthen core OS/COA/System design", "skills": ["OS", "COA", "System Design"], "completed": False},
+        {"step": "Practice with mock interviews", "skills": ["Interview Preparation"], "completed": False},
+        {"step": "Give interview!", "skills": ["Interview Preparation"], "completed": False},
+    ]
 
-def update_roadmap(username, new_skills):
-    # Temp
-    existing_skills = get_skills(username)
-    combined_skills = list(set(existing_skills + new_skills))
-    users.update_one({"username": username}, {"$set": {"skills": combined_skills}})
-    return roadmap_for_skills(username)
+def update_user_roadmap(username, updated_skills):
+    user = users.find_one({"username": username})
+    if not user:
+        print(f"User {username} not found")
+        return
+
+    roadmap = user.get("roadmap", generate_roadmap())
+    for step in roadmap:
+        if not step["completed"]:
+            if all(skill in updated_skills for skill in step["skills"]):
+                step["completed"] = True
+    
+    users.update_one({"username": username}, {"$set": {"roadmap": roadmap}})
+
+def get_user_roadmap(username):
+    user = users.find_one({"username": username})
+    if user:
+        updated_skills = user.get("skills", [])
+        update_user_roadmap(username, updated_skills)  # Ensure the roadmap is updated before returning
+        return user["roadmap"]
+    return generate_roadmap()

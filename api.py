@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from mongo import create_account, add_skills, skill_from_id, skill_search, get_skills, roadmap_for_skills, update_roadmap
+from mongo import create_account, add_skills, skill_from_id, skill_search, get_skills, get_user_roadmap
 
 origins = [
     "*",
@@ -20,7 +20,8 @@ def create_account_endpoint(
     skills_list = skills.split(",") if skills else []
     success = create_account(username, password, skills_list)
     if success != -1:
-        return {"message": "Account created successfully"}
+        roadmap = get_user_roadmap(username)
+        return {"message": "Account created successfully", "roadmap": roadmap}
     else:
         raise HTTPException(status_code=400, detail="Failed to create account")
 
@@ -37,15 +38,10 @@ def add_skills_endpoint(username: str = Form(...), skills: str = Form(...)):
     skills_list = skills.split(",")
     add_skills(username, skills_list)
     updated_skills = get_skills(username)
-    return {"message": "Skills added successfully", "skills": updated_skills}
+    roadmap = get_user_roadmap(username)
+    return {"message": "Skills added successfully", "skills": updated_skills, "roadmap": roadmap}
 
 @app.get("/roadmap")
 def roadmap_endpoint(username: str):
-    roadmap = roadmap_for_skills(username)
+    roadmap = get_user_roadmap(username)
     return {"username": username, "roadmap": roadmap}
-
-@app.post("/update_roadmap")
-def update_roadmap_endpoint(username: str = Form(...), skills: str = Form(...)):
-    new_skills = skills.split(",")
-    updated_roadmap = update_roadmap(username, new_skills)
-    return {"message": "Roadmap updated successfully", "roadmap": updated_roadmap}
