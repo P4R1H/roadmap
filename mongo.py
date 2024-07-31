@@ -4,12 +4,14 @@ import hashlib
 from dotenv import load_dotenv
 from bson import json_util, ObjectId
 import json
+
 load_dotenv()
 
 client = MongoClient(os.getenv("MONGO_URI"))
 database = client["automap"]
 users = database["Users"]
 skills = database["Skills"]
+roadmaps = database["Roadmaps"]
 
 try:
     client.admin.command("ping")
@@ -20,7 +22,7 @@ except Exception as e:
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-def create_account(username, password, skills=None):
+def create_account(username, password, skills=None, desired_role="SWE @ Microsoft"):
     if users.find_one({"username": username}):
         print("Username already exists")
         return -1
@@ -32,14 +34,18 @@ def create_account(username, password, skills=None):
             "username": username,
             "password": password_hash,
             "skills": skills if skills else [],
-            "roadmap": generate_roadmap()
+            "desired_role": desired_role,
+            "roadmap": []  # Empty roadmap, will be generated on first access
         }
     )
 
     if result.acknowledged:
         print(f"Account created successfully for {username}")
+        update_user_roadmap(username)  # Generate initial roadmap
+        return 1
     else:
         print("Failed to create account")
+        return -1
 
 def skill_from_id(skill_id):
     return skills.find_one({"_id": ObjectId(skill_id)})
@@ -56,8 +62,9 @@ def add_skills(username, new_skills):
         {"$set": {"skills": updated_skills}}
     )
 
-    update_user_roadmap(username, updated_skills)
+    update_user_roadmap(username)
     print(f"Skills updated for {username}")
+    return 1
 
 def get_skills(username: str):
     user = users.find_one({"username": username})
@@ -86,47 +93,163 @@ def skill_search(q: str):
     
     return json.loads(json_util.dumps(res))
 
-def generate_roadmap():
-    return [
-        {"step": "Learn a language", "skills": ["Programming Language"], "completed": False},
-        {"step": "Solve leetcode easy", "skills": ["Problem Solving"], "completed": False},
-        {"step": "Build an easy project", "skills": ["Project Development"], "completed": False},
-        {"step": "Learn about common datastructures", "skills": ["Data Structures"], "completed": False},
-        {"step": "Leetcode easys + mediums", "skills": ["Problem Solving"], "completed": False},
-        {"step": "Give your first codechef contest", "skills": ["Competitive Programming"], "completed": False},
-        {"step": "Choose a domain (webdev, AI/ML, app dev)", "skills": ["Domain Knowledge"], "completed": False},
-        {"step": "Create projects in your chosen domain", "skills": ["Project Development"], "completed": False},
-        {"step": "Learn common devops tools", "skills": ["DevOps"], "completed": False},
-        {"step": "Start applying for internships", "skills": ["Networking", "Interview Preparation"], "completed": False},
-        {"step": "Participate in hackathons", "skills": ["Hackathons"], "completed": False},
-        {"step": "Contribute to open source", "skills": ["Open Source"], "completed": False},
-        {"step": "Learn complex DSA concepts", "skills": ["Advanced DSA"], "completed": False},
-        {"step": "Attend Microsoft webinars", "skills": ["Networking"], "completed": False},
-        {"step": "Strengthen core OOPS concepts", "skills": ["OOPS"], "completed": False},
-        {"step": "Strengthen core DBMS", "skills": ["DBMS"], "completed": False},
-        {"step": "Strengthen core OS/COA/System design", "skills": ["OS", "COA", "System Design"], "completed": False},
-        {"step": "Practice with mock interviews", "skills": ["Interview Preparation"], "completed": False},
-        {"step": "Give interview!", "skills": ["Interview Preparation"], "completed": False},
-    ]
+def get_base_roadmap():
+    return roadmaps.find_one({"type": "base"})["steps"]
 
-def update_user_roadmap(username, updated_skills):
+def get_role_specific_roadmap(role):
+    return roadmaps.find_one({"type": "role_specific", "role": role})["steps"]
+
+def generate_user_roadmap(username, desired_role):
+    user = users.find_one({"username": username})
+    if not user:
+        return None
+
+    base_roadmap = get_base_roadmap()
+    role_specific_steps = get_role_specific_roadmap(desired_role)
+    
+    user_roadmap = base_roadmap + role_specific_steps
+    user_skills = set(user.get("skills", []))
+
+    for step in user_roadmap:
+        step_skills = set(skill["name"] for skill in step["skills"])
+        step["completed"] = step_skills.issubset(user_skills)
+
+    return user_roadmap
+
+def update_user_roadmap(username):
     user = users.find_one({"username": username})
     if not user:
         print(f"User {username} not found")
         return
 
-    roadmap = user.get("roadmap", generate_roadmap())
-    for step in roadmap:
-        if not step["completed"]:
-            if all(skill in updated_skills for skill in step["skills"]):
-                step["completed"] = True
+    desired_role = user.get("desired_role", "SWE @ Microsoft")  # Default role if not set
+    updated_roadmap = generate_user_roadmap(username, desired_role)
     
-    users.update_one({"username": username}, {"$set": {"roadmap": roadmap}})
+    users.update_one({"username": username}, {"$set": {"roadmap": updated_roadmap}})
 
 def get_user_roadmap(username):
     user = users.find_one({"username": username})
     if user:
-        updated_skills = user.get("skills", [])
-        update_user_roadmap(username, updated_skills)  # Ensure the roadmap is updated before returning
+        if "roadmap" not in user or not user["roadmap"]:
+            update_user_roadmap(username)
         return user["roadmap"]
-    return generate_roadmap()
+    return None
+
+# Initialize roadmaps in the database
+def initialize_roadmaps():
+    if roadmaps.count_documents({}) == 0:
+        base_roadmap = {
+            "type": "base",
+            "steps": [
+                {
+                    "step": "Learn a programming language",
+                    "skills": [{"name": "Programming Language", "level": "basic"}],
+                },
+                {
+                    "step": "Solve leetcode easy problems",
+                    "skills": [{"name": "Problem Solving", "level": "basic"}],
+                },
+                {
+                    "step": "Build an easy project",
+                    "skills": [{"name": "Project Development", "level": "basic"}],
+                },
+                {
+                    "step": "Learn about common data structures",
+                    "skills": [{"name": "Data Structures", "level": "basic"}],
+                },
+                {
+                    "step": "Learn version control (Git)",
+                    "skills": [{"name": "Version Control", "level": "basic"}],
+                },
+                {
+                    "step": "Solve leetcode easy and medium problems",
+                    "skills": [{"name": "Problem Solving", "level": "intermediate"}],
+                },
+                {
+                    "step": "Participate in a coding contest",
+                    "skills": [{"name": "Competitive Programming", "level": "basic"}],
+                },
+                {
+                    "step": "Learn common DevOps tools",
+                    "skills": [{"name": "DevOps", "level": "basic"}],
+                },
+                {
+                    "step": "Participate in hackathons",
+                    "skills": [{"name": "Hackathons", "level": "intermediate"}],
+                },
+                {
+                    "step": "Contribute to open source projects",
+                    "skills": [{"name": "Open Source", "level": "intermediate"}],
+                },
+                {
+                    "step": "Learn advanced DSA concepts",
+                    "skills": [{"name": "Advanced DSA", "level": "advanced"}],
+                },
+                {
+                    "step": "Strengthen core OOP concepts",
+                    "skills": [{"name": "OOPS", "level": "intermediate"}],
+                },
+                {
+                    "step": "Strengthen core DBMS concepts",
+                    "skills": [{"name": "DBMS", "level": "intermediate"}],
+                },
+                {
+                    "step": "Learn OS, Computer Architecture, and System Design basics",
+                    "skills": [
+                        {"name": "OS", "level": "basic"},
+                        {"name": "Computer Architecture", "level": "basic"},
+                        {"name": "System Design", "level": "basic"}
+                    ],
+                },
+                {
+                    "step": "Practice with mock interviews",
+                    "skills": [{"name": "Interview Preparation", "level": "intermediate"}],
+                },
+            ]
+        }
+
+        role_specific_roadmap = {
+            "type": "role_specific",
+            "role": "SWE @ Microsoft",
+            "steps": [
+                {
+                    "step": "Learn C# and .NET framework",
+                    "skills": [
+                        {"name": "C#", "level": "intermediate"},
+                        {"name": ".NET", "level": "intermediate"}
+                    ],
+                },
+                {
+                    "step": "Understand Microsoft Azure",
+                    "skills": [{"name": "Azure", "level": "intermediate"}],
+                },
+                {
+                    "step": "Practice advanced system design",
+                    "skills": [{"name": "System Design", "level": "advanced"}],
+                },
+                {
+                    "step": "Learn about Microsoft's development practices",
+                    "skills": [{"name": "Microsoft Development Practices", "level": "intermediate"}],
+                },
+                {
+                    "step": "Contribute to .NET open source projects",
+                    "skills": [
+                        {"name": "Open Source", "level": "advanced"},
+                        {"name": ".NET", "level": "advanced"}
+                    ],
+                },
+                {
+                    "step": "Prepare for Microsoft-specific interview questions",
+                    "skills": [{"name": "Microsoft Interview Preparation", "level": "advanced"}],
+                },
+            ]
+        }
+
+        roadmaps.insert_one(base_roadmap)
+        roadmaps.insert_one(role_specific_roadmap)
+        print("Roadmaps initialized in the database")
+    else:
+        print("Roadmaps already exist in the database")
+
+# Call this function when the application starts
+initialize_roadmaps()
