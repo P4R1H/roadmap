@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Form, HTTPException
-from mongo import create_account, add_skills, skill_from_id
-app = FastAPI()
+from mongo import create_account, add_skills, skill_from_id, skill_search
 
+app = FastAPI()
 
 @app.post("/create_account")
 def create_account_endpoint(username: str = Form(...), password: str = Form(...), skills: str = Form("")):
@@ -12,3 +12,6 @@ def create_account_endpoint(username: str = Form(...), password: str = Form(...)
     else:
         raise HTTPException(status_code=400, detail="Failed to create account")
 
+@app.get("/search")
+def search_endpoint(q: str = ""):
+    return skill_search(q)
