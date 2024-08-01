@@ -137,6 +137,10 @@ def get_base_roadmap():
 def get_role_specific_roadmap(role):
     return roadmaps.find_one({"type": "role_specific", "role": role})["steps"]
 
+def get_desired_role(username):
+    return users.find_one({"username": username})["desired_role"]
+    
+
 def generate_user_roadmap(username, desired_role):
     user = users.find_one({"username": username})
     if not user:

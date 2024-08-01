@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Form, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from mongo import create_account, add_skills, delete_skills, skill_search, get_skills, get_user_roadmap, update_user_roadmap, create_account_from_email
+from mongo import create_account, add_skills, delete_skills, skill_search, get_skills, get_user_roadmap, update_user_roadmap, create_account_from_email, get_desired_role
 
 origins = [
     "*",
@@ -44,6 +44,15 @@ def get_skills_endpoint(username: str):
 @app.get("/search")
 def search_endpoint(q: str = ""):
     return skill_search(q)
+
+@app.get("/get_desired_role")
+def get_desired_role_endpoint(username: str):
+    role = get_desired_role(username)
+    if role:
+        return {"username": username, "desired_role": role}
+    else:
+        raise HTTPException(status_code=404, detail="User or desired role not found")
+
 
 @app.post("/add_skills")
 def add_skills_endpoint(username: str = Form(...), skills: str = Form(...)):
