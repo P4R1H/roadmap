@@ -48,14 +48,13 @@ def create_account(username, password, skills=None, desired_role="SWE @ Microsof
         return -1
 
 def create_account_from_email(email):
-    if users.find_one({"email": email}):
+    if users.find_one({"username": email}):
         print("Account already exists")
         return -1
 
     result = users.insert_one(
         {
-            "email": email,
-            "password": None,
+            "username": email,
             "skills": [],
             "desired_role": "SWE @ Microsoft",
             "roadmap": []
