@@ -47,6 +47,45 @@ def create_account(username, password, skills=None, desired_role="SWE @ Microsof
         print("Failed to create account")
         return -1
 
+def create_account_from_email(email):
+    if users.find_one({"email": email}):
+        print("Account already exists")
+        return -1
+
+    result = users.insert_one(
+        {
+            "email": email,
+            "password": None,
+            "skills": [],
+            "desired_role": "SWE @ Microsoft",
+            "roadmap": []
+        }
+    )
+
+    if result.acknowledged:
+        print(f"Account created successfully for {email}")
+        update_user_roadmap(email)
+        return 1
+    else:
+        print("Failed to create account")
+        return -1
+
+def delete_skills(username, skills_list):
+    user = users.find_one({"username": username})
+    if not user:
+        print(f"User {username} not found")
+        return -1
+
+    updated_skills = [skill for skill in user.get("skills", []) if skill not in skills_list]
+    users.update_one(
+        {"username": username},
+        {"$set": {"skills": updated_skills}}
+    )
+
+    update_user_roadmap(username)
+    print(f"Skills deleted for {username}")
+    return 1
+
 def skill_from_id(skill_id):
     return skills.find_one({"_id": ObjectId(skill_id)})
 

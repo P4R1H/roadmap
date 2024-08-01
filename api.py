@@ -1,10 +1,11 @@
 from fastapi import FastAPI, Form, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from mongo import create_account, add_skills, skill_from_id, skill_search, get_skills, get_user_roadmap, update_user_roadmap
+from mongo import create_account, add_skills, delete_skills, skill_search, get_skills, get_user_roadmap, update_user_roadmap, create_account_from_email
 
 origins = [
     "*",
 ]
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -28,6 +29,14 @@ def create_account_endpoint(
     else:
         raise HTTPException(status_code=400, detail="Failed to create account")
 
+@app.post("/create_account_from_email")
+def create_account_from_email_endpoint(email: str = Form(...)):
+    success = create_account_from_email(email)
+    if success == -1:
+        return {"message": "Account already exists or failed to create"}
+    roadmap = get_user_roadmap(email)
+    return {"message": "Account created successfully", "roadmap": roadmap}
+
 @app.get("/get_skills")
 def get_skills_endpoint(username: str):
     return get_skills(username)
@@ -48,6 +57,19 @@ def add_skills_endpoint(username: str = Form(...), skills: str = Form(...)):
         return {"message": "Skills added successfully", "skills": updated_skills, "roadmap": roadmap}
     else:
         raise HTTPException(status_code=400, detail="Failed to add skills")
+
+@app.post("/delete_skills")
+def delete_skills_endpoint(username: str = Form(...), skills: str = Form(...)):
+    skills_list = [skill.strip() for skill in skills.split(",") if skill.strip()]
+    if not skills_list:
+        raise HTTPException(status_code=400, detail="No valid skills provided")
+    success = delete_skills(username, skills_list)
+    if success != -1:
+        updated_skills = get_skills(username)
+        roadmap = get_user_roadmap(username)
+        return {"message": "Skills deleted successfully", "skills": updated_skills, "roadmap": roadmap}
+    else:
+        raise HTTPException(status_code=400, detail="Failed to delete skills")
 
 @app.get("/roadmap")
 def roadmap_endpoint(username: str):
