@@ -48,8 +48,9 @@ def search_endpoint(q: str = ""):
 @app.get("/get_desired_role")
 def get_desired_role_endpoint(username: str):
     role = get_desired_role(username)
+    roadmap = get_user_roadmap(username)
     if role:
-        return {"username": username, "desired_role": role}
+        return {"username": username, "desired_role": role, "roadmap" : roadmap}
     else:
         raise HTTPException(status_code=404, detail="User or desired role not found")
 
